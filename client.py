@@ -1,11 +1,20 @@
 import socket
+import sys
 
 sock = socket.socket()
 
-port = 1997
+address = str(sys.argv[1])
+port = int(sys.argv[2])
 
-sock.connect(('127.0.0.1', port))
+sock.connect((address, port))
 
 print (sock.recv(1024).decode())
 
-sock.close()
+#sock.close()
+
+'''while True:
+	print("Press f to disconnect")
+	choice = input()
+	if choice == 'f':
+		sock.close()
+		break'''
