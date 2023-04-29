@@ -10,11 +10,4 @@ sock.connect((address, port))
 
 print (sock.recv(1024).decode())
 
-#sock.close()
-
-'''while True:
-	print("Press f to disconnect")
-	choice = input()
-	if choice == 'f':
-		sock.close()
-		break'''
+sock.close()
