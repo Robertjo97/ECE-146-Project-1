@@ -1,21 +1,50 @@
+import threading
 import socket
 import sys
 
-sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-print("socket created")
-
+address = ''
 port = int(sys.argv[1])
 
-sock.bind(('', port))
-print("socket bound to port: ",port)
+server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_sock.bind((address, port))
+server_sock.listen()
 
+clients = []
+names = []
 
-sock.listen(5)
-print("listening for incoming connections...")
+def broadcast(msg):
+    for client in clients:
+        client.send(msg)
 
-while True:
-    (client, address) = sock.accept()
-    print("Client ", address, "has connected")
-    client.send("Hello client".encode())
-    client.close()
-    break
+def handle(client):
+    while True:
+        try:
+            msg = client.recv(1024)
+            broadcast(msg)
+        except:
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            name = names[index]
+            broadcast(name.encode('ascii')+' has left the chat'.encode('ascii'))
+            names.remove(name)
+            break
+
+def receive():
+    while True:
+        client, address = server_sock.accept()
+        print(str(address), 'has connected')
+
+        client.send('NICK'.encode('ascii'))
+        name = client.recv(1024).decode('ascii')
+        names.append(name)
+        clients.append(client)
+
+        print('Name of client is',name)
+        broadcast(name.encode('ascii')+' has joined the chat'.encode('ascii'))
+        client.send('Connection successful'.encode('ascii'))
+
+        thread = threading.Thread(target=handle,args=(client,))
+        thread.start()
+
+receive()
