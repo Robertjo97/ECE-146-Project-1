@@ -1,50 +1,54 @@
-import threading
 import socket
+import threading
 import sys
 
 address = ''
 port = int(sys.argv[1])
 
-server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_sock.bind((address, port))
-server_sock.listen()
+client_list = []
+usernames = []
 
-clients = []
-names = []
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print('Socket created on port', port)
+server_socket.bind((address, port))
+server_socket.listen()
+print("Listening...")
 
-def broadcast(msg):
-    for client in clients:
-        client.send(msg)
+def broadcast(message):
+    for client in client_list:
+        client.send(message)
 
-def handle(client):
+def manage(client):
     while True:
         try:
-            msg = client.recv(1024)
-            broadcast(msg)
+            message = client.recv(1024)
+            broadcast(message)
         except:
-            index = clients.index(client)
-            clients.remove(client)
+            index = client_list.index(client)
+            username = usernames[index]
+            client_list.remove(client)
+            usernames.remove(username)
             client.close()
-            name = names[index]
-            broadcast(name.encode('ascii')+' has left the chat'.encode('ascii'))
-            names.remove(name)
+            broadcast(username.encode('utf-8')+' has left the chat'.encode('utf-8'))
+            print(username+' has disconnected')
+            print("Current client count:",len(client_list))
             break
 
-def receive():
-    while True:
-        client, address = server_sock.accept()
-        print(str(address), 'has connected')
+while True:
+    print("Current client count:", len(client_list))
+    client, client_address = server_socket.accept()
+    
+    print("Connection from",client_address)
+    client.send('ECE146'.encode('utf-8'))
+    username = client.recv(1024).decode('utf-8')
+    usernames.append(username)
+    client_list.append(client)
+    print('Name of client is', username)
 
-        client.send('NICK'.encode('ascii'))
-        name = client.recv(1024).decode('ascii')
-        names.append(name)
-        clients.append(client)
+    broadcast(username.encode('utf-8')+' has joined the chat.'.encode('utf-8'))
+    client.send('Welcome '.encode('utf-8')+username.encode('utf-8')+'!'.encode('utf-8'))
 
-        print('Name of client is',name)
-        broadcast(name.encode('ascii')+' has joined the chat'.encode('ascii'))
-        client.send('Connection successful'.encode('ascii'))
+    client_thread = threading.Thread(target=manage,args=(client,))
+    client_thread.start()
 
-        thread = threading.Thread(target=handle,args=(client,))
-        thread.start()
 
-receive()

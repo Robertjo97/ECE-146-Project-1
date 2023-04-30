@@ -2,34 +2,38 @@ import socket
 import threading
 import sys
 
-name = input('Enter your name: ')
+username = input('Enter Username: ')
 
 address = str(sys.argv[1])
 port = int(sys.argv[2])
 
-client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_sock.connect((address,port))
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-def receive():
+try:
+    client_socket.connect((address,port))
+except:
+    print("Error connecting")
+
+def read():
     while True:
         try:
-            msg = client_sock.recv(1024).decode('ascii')
-            if msg == 'NICK':
-                client_sock.send(name.encode('ascii'))
+            message = client_socket.recv(1024).decode('utf-8')
+            if message == 'ECE146':
+                client_socket.send(username.encode('utf-8'))
             else:
-                print(msg)
+                print(message)
         except:
-            print('Error')
-            client_sock.close()
+            print('Error: connection to server lost')
+            client_socket.close()
             break
 
 def write():
     while True:
-        message = name+': '+input('')
-        client_sock.send(message.encode('ascii'))
+        message = '<'+username+'> '+input('')
+        client_socket.send(message.encode('utf-8'))
 
-receive_thread = threading.Thread(target=receive)
-receive_thread.start()
-
+read_thread = threading.Thread(target=read)
 write_thread = threading.Thread(target=write)
+
+read_thread.start()
 write_thread.start()
